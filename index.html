@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Poly Problemo</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Homepage -->
+  <div id="home">
+    <h1>POLY PROBLEMO</h1>
+    <h4>Polynomial Learning App</h4>
+    <p>Choose an option to begin:</p>
+    <button class = "learnBTN" onclick="goTo('learn')">📘 Learn</button>
+    <button onclick="goTo('quiz')">📝 Practice</button>
+  </div>
+
+  <!-- Learning Section -->
+  <div id="learn" class="hidden">
+    <h1>Polynomial Addition & Subtraction</h1>
+
+    <label>Enter Polynomial 1:</label><br>
+    <input type="text" id="poly1" placeholder="e.g. 3x^2 + 2y - 5"><br>
+
+    <label>Enter Polynomial 2:</label><br>
+    <input type="text" id="poly2" placeholder="e.g. 5x^2 - 4y + 1"><br>
+
+    <button onclick="showSteps()">Show Steps</button>
+    <button onclick="showStatement()">How to Solve</button>
+    <button onclick="goTo('home')">🏠 Back to Home</button>
+
+    <div id="output"></div>
+  </div>
+
+  <!-- Quiz Section -->
+  <div id="quiz" class="hidden">
+    <h1>Polynomial Quiz</h1>
+    <div id="quizContent"></div>
+    <button onclick="goTo('home')">🏠 Back to Home</button>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
