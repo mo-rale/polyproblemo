@@ -7,37 +7,62 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Homepage -->
-  <div class = "homepage" id="home">
-    <h1>POLY PROBLEMO</h1>
-    <h4>Polynomial Learning App</h4>
-    <p>Choose an option to begin:</p>
-    <button class = "learnBTN" onclick="goTo('learn')">📘 Learn</button>
-    <button onclick="goTo('quiz')">📝 Practice</button>
-  </div>
+  <div class="container">
+    <!-- Homepage -->
+    <div class="homepage" id="home">
+      <h1>POLY PROBLEMO</h1>
+      <h4>Polynomial Learning App</h4>
+      <p>Choose an option to begin:</p>
+      <div class="btn-container">
+        <button class="btn" onclick="goTo('learn')">
+          <span>📘</span> Learn & Practice
+        </button>
+        <button class="btn" onclick="goTo('quiz')">
+          <span>📝</span> Take a Quiz
+        </button>
+      </div>
+    </div>
 
-  <!-- Learning Section -->
-  <div id="learn" class="hidden">
-    <h1>Polynomial Addition & Subtraction</h1>
+    <!-- Learning Section -->
+    <div id="learn" class="section hidden">
+      <button class="back-btn" onclick="goTo('home')">←</button>
+      <h1>Polynomial Operations</h1>
+      
+      <div class="operation-selector">
+        <button class="op-btn active" data-op="add">Addition</button>
+        <button class="op-btn" data-op="sub">Subtraction</button>
+        <button class="op-btn" data-op="mult">Multiplication</button>
+        <button class="op-btn" data-op="div">Division</button>
+      </div>
+      
+      <div class="input-group">
+        <label for="poly1">Enter Polynomial 1:</label>
+        <input type="text" id="poly1" class="input-field" placeholder="e.g. 3x² + 2y - 5" oninput="clearOutput()">
+      </div>
+      
+      <div class="input-group">
+        <label for="poly2">Enter Polynomial 2:</label>
+        <input type="text" id="poly2" class="input-field" placeholder="e.g. 5x² - 4y + 1" oninput="clearOutput()">
+      </div>
+      
+      <div class="action-buttons">
+        <button class="action-btn" onclick="showSteps()">
+          <span>🔍</span> Show Steps
+        </button>
+        <button class="action-btn" onclick="showStatement()">
+          <span>❓</span> How to Solve
+        </button>
+      </div>
+      
+      <div id="output"></div>
+    </div>
 
-    <label>Enter Polynomial 1:</label><br>
-    <input type="text" id="poly1" placeholder="e.g. 3x^2 + 2y - 5"><br>
-
-    <label>Enter Polynomial 2:</label><br>
-    <input type="text" id="poly2" placeholder="e.g. 5x^2 - 4y + 1"><br>
-
-    <button onclick="showSteps()">Show Steps</button>
-    <button onclick="showStatement()">How to Solve</button>
-    <button onclick="goTo('home')">🏠 Back to Home</button>
-
-    <div id="output"></div>
-  </div>
-
-  <!-- Quiz Section -->
-  <div id="quiz" class="hidden">
-    <h1>Polynomial Quiz</h1>
-    <div id="quizContent"></div>
-    <button onclick="goTo('home')">🏠 Back to Home</button>
+    <!-- Quiz Section -->
+    <div id="quiz" class="section hidden">
+      <button class="back-btn" onclick="goTo('home')">←</button>
+      <h1>Polynomial Quiz</h1>
+      <div id="quizContent"></div>
+    </div>
   </div>
 
   <script src="script.js"></script>
