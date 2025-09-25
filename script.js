@@ -95,13 +95,34 @@ function goTo(page) {
   }
 }
 
-// Polynomial Parser - supports ² input
+// Polynomial Parser - supports superscripts ²³⁴...¹⁰
 function parsePolynomial(poly) {
-  // Replace ² with ^2 for processing
-  poly = poly.replace(/²/g, '^2');
+  // Map superscript characters to normal digits
+  const superscriptMap = {
+    "⁰": "0",
+    "¹": "1",
+    "²": "2",
+    "³": "3",
+    "⁴": "4",
+    "⁵": "5",
+    "⁶": "6",
+    "⁷": "7",
+    "⁸": "8",
+    "⁹": "9"
+  };
+
+  // Replace superscripts with normal numbers
+  poly = poly.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]+/g, s => 
+    [...s].map(ch => superscriptMap[ch] || ch).join("")
+  );
+
+  // Clean spaces
   poly = poly.replace(/\s+/g, "");
+
+  // Extract terms like 3x^2, -x^10, 4, etc.
   const terms = poly.match(/[+-]?\d*[a-z](\^\d+)?|[+-]?\d+/gi) || [];
   let parsed = {};
+
   terms.forEach(term => {
     let coeff = 0, vars = "";
     const match = term.match(/^([+-]?\d*)([a-z](\^\d+)?([a-z](\^\d+)?)*)?/i);
@@ -112,6 +133,7 @@ function parsePolynomial(poly) {
     }
     parsed[vars] = (parsed[vars] || 0) + coeff;
   });
+
   return parsed;
 }
 
@@ -120,25 +142,51 @@ function formatPolynomial(poly) {
   let keys = Object.keys(poly).filter(k => poly[k] !== 0);
 
   // sort by power length then alphabetically
-  keys.sort((a,b) => {
-    const getPower = v => v.match(/\^(\d+)/) ? parseInt(v.match(/\^(\d+)/)[1]) : (v === "" ? 0 : 1);
+  keys.sort((a, b) => {
+    const getPower = v => v.match(/\^(\d+)/) 
+      ? parseInt(v.match(/\^(\d+)/)[1]) 
+      : (v === "" ? 0 : 1);
     return getPower(b) - getPower(a) || a.localeCompare(b);
   });
 
   keys.forEach(k => {
     let coeff = poly[k];
     if (coeff === 0) return;
+
     let term = "";
-    if (k === "") term = coeff.toString();
-    else if (coeff === 1) term = k;
-    else if (coeff === -1) term = "-" + k;
-    else term = coeff + k;
+    if (k === "") {
+      term = coeff.toString();
+    } else if (coeff === 1) {
+      term = k;
+    } else if (coeff === -1) {
+      term = "-" + k;
+    } else {
+      term = coeff + k;
+    }
     terms.push(term);
   });
 
   let result = terms.join(" + ").replace(/\+\s-\s/g, "- ");
-  // Replace ^2 with ² for display
-  return result.replace(/\^2/g, '²');
+
+  //Convert ALL exponents (^number) to superscript characters
+  const superscripts = {
+    "0": "⁰",
+    "1": "¹",
+    "2": "²",
+    "3": "³",
+    "4": "⁴",
+    "5": "⁵",
+    "6": "⁶",
+    "7": "⁷",
+    "8": "⁸",
+    "9": "⁹"
+  };
+
+  result = result.replace(/\^(\d+)/g, (_, exp) => {
+    return [...exp].map(d => superscripts[d] || d).join("");
+  });
+
+  return result || "0";
 }
 
 // Polynomial operations
@@ -266,75 +314,68 @@ function formatTermForDivision(term) {
 // Polynomial long division using coefficient arrays
 function polynomialLongDivision(dividendStr, divisorStr) {
   try {
-    // Convert our polynomial format to coefficient arrays
+    // Convert input polynomials to coefficient arrays (low → high degree)
     const dividendArray = polynomialToCoefficientArray(dividendStr);
     const divisorArray = polynomialToCoefficientArray(divisorStr);
-    
+
     // Check if divisor is zero
     if (divisorArray.length === 0 || divisorArray.every(c => c === 0)) {
       return "<div class='error'>Error: Cannot divide by zero</div>";
     }
-    
+
     let steps = "<h3>Polynomial Long Division Steps:</h3>";
     steps += `<div class="step"><span class="step-number">1</span><span class="step-content">Divide (${formatPolynomial(parsePolynomial(dividendStr))}) by (${formatPolynomial(parsePolynomial(divisorStr))})</span></div>`;
-    
+
     let result = [];
     let remainder = [...dividendArray];
+    let divisor = [...divisorArray];
     let stepCount = 2;
-    
-    // Remove leading zeros from remainder
-    while (remainder.length > 0 && remainder[0] === 0) {
-      remainder.shift();
-    }
-    
-    // Remove leading zeros from divisor
-    const divisor = [...divisorArray];
-    while (divisor.length > 0 && divisor[0] === 0) {
-      divisor.shift();
-    }
-    
+
+    // Trim trailing zeros (highest degree at the end for low → high arrays)
+    while (remainder.length > 0 && remainder[remainder.length - 1] === 0) remainder.pop();
+    while (divisor.length > 0 && divisor[divisor.length - 1] === 0) divisor.pop();
+
     if (divisor.length === 0) {
       return "<div class='error'>Error: Divisor cannot be zero</div>";
     }
-    
+
+    // Perform division
     while (remainder.length >= divisor.length && remainder.some(c => c !== 0)) {
-      // Divide leading terms
-      let coeff = remainder[0] / divisor[0];
+      // Divide leading terms (last elements, highest degree)
+      let coeff = remainder[remainder.length - 1] / divisor[divisor.length - 1];
       let degreeDiff = remainder.length - divisor.length;
-      
+
       // Build quotient term
       let term = new Array(degreeDiff + 1).fill(0);
-      term[0] = coeff;
+      term[degreeDiff] = coeff;
       result = addPolynomialArrays(result, term);
-      
+
       steps += `<div class="step"><span class="step-number">${stepCount++}</span><span class="step-content"><strong>Current dividend/remainder:</strong> ${formatPolynomialArray(remainder)}</span></div>`;
-      steps += `<div class="step"><span class="step-number">${stepCount++}</span><span class="step-content"><strong>Divide leading terms:</strong> (${formatPolynomialArray([remainder[0]])}) ÷ (${formatPolynomialArray([divisor[0]])}) = ${formatPolynomialArray(term)}</span></div>`;
-      
+      steps += `<div class="step"><span class="step-number">${stepCount++}</span><span class="step-content"><strong>Divide leading terms:</strong> ${remainder[remainder.length - 1]}x^${remainder.length - 1} ÷ ${divisor[divisor.length - 1]}x^${divisor.length - 1} = ${formatPolynomialArray(term)}</span></div>`;
+
       // Multiply divisor by term
       let subtractTerm = multiplyPolynomialArrays(divisor, term);
       steps += `<div class="step"><span class="step-number">${stepCount++}</span><span class="step-content"><strong>Multiply divisor:</strong> (${formatPolynomialArray(divisor)}) × (${formatPolynomialArray(term)}) = ${formatPolynomialArray(subtractTerm)}</span></div>`;
-      
+
       // Subtract from remainder
       remainder = subtractPolynomialArrays(remainder, subtractTerm);
-      
-      // Remove leading zeros from remainder
-      while (remainder.length > 0 && remainder[0] === 0) {
-        remainder.shift();
-      }
-      
+
+      // Trim trailing zeros again
+      while (remainder.length > 0 && remainder[remainder.length - 1] === 0) remainder.pop();
+
       steps += `<div class="step"><span class="step-number">${stepCount++}</span><span class="step-content"><strong>Subtract:</strong> ${formatPolynomialArray(subtractTerm)} from current dividend</span></div>`;
       steps += `<div class="step"><span class="step-number">${stepCount++}</span><span class="step-content"><strong>New remainder:</strong> ${formatPolynomialArray(remainder)}</span></div>`;
-      
-      // Safety check to prevent infinite loops
+
+      // Safety check
       if (stepCount > 50) {
         steps += `<div class="step"><span class="step-number">${stepCount++}</span><span class="step-content"><strong>Note:</strong> Division process stopped to avoid infinite loop.</span></div>`;
         break;
       }
     }
-    
+
     steps += `<div class="final-result"><h4>Final Quotient: ${formatPolynomialArray(result)}</h4>`;
-    steps += `<h4>Final Remainder: ${formatPolynomialArray(remainder) || '0'}</h4></div>`;
-    
+    steps += `<h4>Final Remainder: ${formatPolynomialArray(remainder)}</h4></div>`;
+
     return steps;
   } catch (error) {
     console.error("Division error:", error);
@@ -342,21 +383,18 @@ function polynomialLongDivision(dividendStr, divisorStr) {
   }
 }
 
+
 // Convert our polynomial format to coefficient arrays
 function polynomialToCoefficientArray(polyStr) {
-  // For simplicity, let's handle common cases
-  // This is a simplified version - you might need to expand it for more complex polynomials
-  
   // Parse the polynomial using our existing function
   const parsed = parsePolynomial(polyStr);
-  
+
   // Find the highest degree
   let maxDegree = 0;
   for (const key of Object.keys(parsed)) {
     if (key === "") {
       maxDegree = Math.max(maxDegree, 0);
     } else {
-      // Extract exponent from variable part
       let degree = 1;
       if (key.includes('^')) {
         degree = parseInt(key.split('^')[1]);
@@ -366,15 +404,14 @@ function polynomialToCoefficientArray(polyStr) {
       maxDegree = Math.max(maxDegree, degree);
     }
   }
-  
-  // Create coefficient array
+
+  // Create coefficient array [low → high]
   const coefficients = new Array(maxDegree + 1).fill(0);
-  
+
   for (const [key, value] of Object.entries(parsed)) {
     if (key === "") {
-      coefficients[coefficients.length - 1] = value; // Constant term
+      coefficients[0] = value; // constant term
     } else {
-      // Extract exponent from variable part
       let degree = 1;
       if (key.includes('^')) {
         degree = parseInt(key.split('^')[1]);
@@ -383,12 +420,13 @@ function polynomialToCoefficientArray(polyStr) {
       } else {
         degree = 1;
       }
-      coefficients[coefficients.length - 1 - degree] = value;
+      coefficients[degree] = value;
     }
   }
-  
+
   return coefficients;
 }
+
 
 // Format coefficient array as polynomial string
 function formatPolynomialArray(polyArray) {
@@ -559,7 +597,7 @@ function showSteps() {
     case "div":
   // Use polynomial long division
       steps = polynomialLongDivision(p1Input, p2Input);
-      // Don't add a final result for division as it's included in the steps
+      result = {};
       break;
   }
   
@@ -567,13 +605,10 @@ function showSteps() {
   output.classList.remove("show");
   
   let resultHTML = "";
-  if (result["[result]"] === "Division completed") {
-    // Result is already included in the steps for division
-    resultHTML = "";
-  } else {
-    resultHTML = `<div class='final-result'><b>Final Result: ${formatPolynomial(result)}</b></div>`;
-  }
-  
+if (currentOperation !== "div") {
+  resultHTML = `<div class='final-result'><b>Final Result: ${formatPolynomial(result)}</b></div>`;
+}
+
   output.innerHTML = `${steps}${resultHTML}`;
   
   setTimeout(() => {
@@ -583,14 +618,31 @@ function showSteps() {
 
 function formatTerm(coeff, vars) {
   if (vars === "") return coeff.toString();
-  
-  // Replace ^2 with ² for display
-  vars = vars.replace(/\^2/g, '²');
-  
+
+  // Map digits to superscript characters
+  const superscripts = {
+    "0": "⁰",
+    "1": "¹",
+    "2": "²",
+    "3": "³",
+    "4": "⁴",
+    "5": "⁵",
+    "6": "⁶",
+    "7": "⁷",
+    "8": "⁸",
+    "9": "⁹"
+  };
+
+  // Replace ^<number> with superscript version
+  vars = vars.replace(/\^(\d+)/g, (_, exp) => {
+    return [...exp].map(d => superscripts[d] || d).join("");
+  });
+
   if (coeff === 1) return vars;
   if (coeff === -1) return `-${vars}`;
   return `${coeff}${vars}`;
 }
+
 
 function showStatement() {
   let statement = "";

@@ -367,23 +367,45 @@ body {
 }
 
 /* Responsive Design */
+/* Tablets */
+@media (max-width: 1024px) {
+  .homepage {
+    margin: 20px auto;
+    padding: 30px;
+  }
+
+  #learn, #quiz {
+    margin: 15px auto;
+    padding: 20px;
+    width: 90%; /* prevent stretching to edge */
+  }
+
+  .operation-selector,
+  .action-buttons {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
+/* Mobile */
 @media (max-width: 768px) {
   .homepage {
-    margin: 20px;
-    padding: 30px 20px;
+    margin: 10px auto;
+    padding: 15px;
+    width: 95%; /* shrink to viewport */
   }
-  
+
   #learn, #quiz {
-    margin: 10px;
-    padding: 20px;
+    margin: 10px auto;
+    padding: 15px;
+    width: 100%; /* take full width of container */
+    box-sizing: border-box;
   }
-  
-  .operation-selector {
-    flex-direction: column;
-  }
-  
+
+  .operation-selector,
   .action-buttons {
     flex-direction: column;
+    gap: 10px; /* spacing between items */
   }
 }
 
