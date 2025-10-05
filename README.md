@@ -62,7 +62,7 @@ A comprehensive web application designed to help students learn and practice pol
 ### Option 2: Local Server (Recommended)
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/poly-problemo.git
+git clone https://github.com/mo-rale/poly-problemo.git
 
 # Navigate to project directory
 cd poly-problemo
