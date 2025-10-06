@@ -358,10 +358,14 @@
         margin-top: 20px;
       }
       .try-again-btn {
+        padding: 12px;
+        margin: 10px;
         order: 1;
       }
       .home-btn {
         order: 2;
+        padding: 12px;
+        margin: 10px;
       }
 
 

@@ -283,44 +283,69 @@
 //---------------------------
 //---------------------------
       function parsePolynomial(poly) {
-        // Map superscript characters to normal digits
-        const superscriptMap = {
-          "⁰": "0",
-          "¹": "1",
-          "²": "2",
-          "³": "3",
-          "⁴": "4",
-          "⁵": "5",
-          "⁶": "6",
-          "⁷": "7",
-          "⁸": "8",
-          "⁹": "9"
-        };
-
-        // Replace superscripts with normal numbers
-        poly = poly.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]+/g, s => 
-          [...s].map(ch => superscriptMap[ch] || ch).join("")
-        );
-
-        // Clean spaces
-        poly = poly.replace(/\s+/g, "");
-
-        // Extract terms like 3x^2, -x^10, 4, etc.
-        const terms = poly.match(/[+-]?\d*[a-z](\^\d+)?|[+-]?\d+/gi) || [];
-        let parsed = {};
-
-        terms.forEach(term => {
-          let coeff = 0, vars = "";
-          const match = term.match(/^([+-]?\d*)([a-z](\^\d+)?([a-z](\^\d+)?)*)?/i);
-          if (match) {
-            coeff = match[1] === "" || match[1] === "+" ? 1 :
-                    match[1] === "-" ? -1 : parseInt(match[1]);
-            vars = match[2] ? match[2] : "";
-          }
-          parsed[vars] = (parsed[vars] || 0) + coeff;
-        });
-
-        return parsed;
+  // Clean the input first
+  poly = poly.replace(/\s+/g, "").replace(/²/g, "^2");
+  
+  // Handle empty case
+  if (!poly) return { "": 0 };
+  
+  let parsed = {};
+  let currentTerm = "";
+  let sign = 1;
+  
+  for (let i = 0; i < poly.length; i++) {
+    const char = poly[i];
+    
+    if (char === '+' || char === '-') {
+      // Process the previous term
+      if (currentTerm !== "") {
+        processTerm(currentTerm, sign, parsed);
+        currentTerm = "";
+      }
+      sign = char === '+' ? 1 : -1;
+    } else {
+      currentTerm += char;
+    }
+  }
+  
+  // Process the last term
+  if (currentTerm !== "") {
+    processTerm(currentTerm, sign, parsed);
+  }
+  
+  return parsed;
+  
+  function processTerm(term, sign, parsed) {
+    if (term === "") return;
+    
+    // Match coefficient and variables
+    const match = term.match(/^([+-]?\d*)([a-z](\^\d+)?)?$/i);
+    if (!match) return;
+    
+    let coeff = match[1];
+    let vars = match[2] || "";
+    
+    // Handle coefficient
+    if (coeff === "" || coeff === "+") {
+      coeff = 1;
+    } else if (coeff === "-") {
+      coeff = -1;
+    } else {
+      coeff = parseInt(coeff);
+    }
+    
+    coeff *= sign;
+    
+    // Handle variables with exponents
+    if (vars.includes('^')) {
+      const [varName, exp] = vars.split('^');
+      vars = varName + '^' + exp;
+    } else if (vars !== "") {
+      vars = vars + '^1';
+    }
+    
+    parsed[vars] = (parsed[vars] || 0) + coeff;
+  }
       }
       function formatPolynomial(poly) {
         let terms = [];
@@ -443,8 +468,7 @@
 // Addition, subtraction, multiplication, and division Operations
 //---------------------------
 //---------------------------
-
-//Addition
+      //Addition
       function addPolynomials(p1, p2) {
         const result = {...p1};
         for (const [key, value] of Object.entries(p2)) {
@@ -452,7 +476,7 @@
         }
         return result;
       }
-//Subtraction
+      //Subtraction
       function subtractPolynomials(p1, p2) {
         const result = {...p1};
         for (const [key, value] of Object.entries(p2)) {
@@ -460,7 +484,7 @@
         }
         return result;
       }
-//Multiplication
+      //Multiplication
       function multiplyPolynomials(p1, p2) {
         const result = {};
         for (const [key1, value1] of Object.entries(p1)) {
@@ -508,7 +532,7 @@
 
       return resultVars.join('');
       }
-//Division
+      //Division
       function polynomialLongDivision(dividendStr, divisorStr) {
       try {
         // Detect variable name from inputs
@@ -593,163 +617,120 @@
       }
       }
       function detectVariableName(poly1, poly2) {
-      // Look for the most common variable (prioritize x, y, z, then others)
-      const commonVars = ['x', 'y', 'z', 'a', 'b', 'c', 'm', 'n'];
+              // Look for the most common variable (prioritize x, y, z, then others)
+              const commonVars = ['x', 'y', 'z', 'a', 'b', 'c', 'm', 'n'];
 
-      // Check for common variables first
-      for (const v of commonVars) {
-        if (poly1.includes(v) || poly2.includes(v)) {
-          return v;
-        }
-      }
+              // Check for common variables first
+              for (const v of commonVars) {
+                if (poly1.includes(v) || poly2.includes(v)) {
+                  return v;
+                }
+              }
 
-      // If no common vars, find any alphabetical character
-      const variableMatch1 = poly1.match(/[a-z]/i);
-      const variableMatch2 = poly2.match(/[a-z]/i);
+              // If no common vars, find any alphabetical character
+              const variableMatch1 = poly1.match(/[a-z]/i);
+              const variableMatch2 = poly2.match(/[a-z]/i);
 
-      return variableMatch1 ? variableMatch1[0] : (variableMatch2 ? variableMatch2[0] : 'x');
+              return variableMatch1 ? variableMatch1[0] : (variableMatch2 ? variableMatch2[0] : 'x');
       }
       function convertQuotientToVariable(quotientStr, variable, dividendDegree, divisorDegree) {
-      const expectedDegree = dividendDegree - divisorDegree;
+              const expectedDegree = dividendDegree - divisorDegree;
 
-      // If we expect a variable but got a constant "1", convert it
-      if (expectedDegree > 0 && quotientStr === "1") {
-        if (expectedDegree === 1) return variable;
-        return variable + "^" + expectedDegree;
-      }
+              // Special case: when dividend and divisor are the same degree, result should be 1
+              if (expectedDegree === 0 && quotientStr === "1") {
+                return "1";
+              }
 
-      // If we expect a variable but got a constant "-1", convert it
-      if (expectedDegree > 0 && quotientStr === "-1") {
-        if (expectedDegree === 1) return "-" + variable;
-        return "-" + variable + "^" + expectedDegree;
-      }
+              // If we expect a variable but got a constant "1", convert it
+              if (expectedDegree > 0 && quotientStr === "1") {
+                if (expectedDegree === 1) return variable;
+                return variable + "^" + expectedDegree;
+              }
 
-      // For other numeric constants where we expect variables
-      if (expectedDegree > 0 && /^-?\d+$/.test(quotientStr)) {
-        const num = parseInt(quotientStr);
-        if (expectedDegree === 1) return quotientStr + variable;
-        return quotientStr + variable + "^" + expectedDegree;
-      }
+              // If we expect a variable but got a constant "-1", convert it
+              if (expectedDegree > 0 && quotientStr === "-1") {
+                if (expectedDegree === 1) return "-" + variable;
+                return "-" + variable + "^" + expectedDegree;
+              }
 
-      // Special case: if quotient is empty but we expect variables, return the variable
-      if (expectedDegree > 0 && quotientStr === "") {
-        if (expectedDegree === 1) return variable;
-        return variable + "^" + expectedDegree;
-      }
+              // For other numeric constants where we expect variables
+              if (expectedDegree > 0 && /^-?\d+$/.test(quotientStr)) {
+                const num = parseInt(quotientStr);
+                if (expectedDegree === 1) return quotientStr + variable;
+                return quotientStr + variable + "^" + expectedDegree;
+              }
 
-      return quotientStr;
+              // Special case: if quotient is empty but we expect variables, return the variable
+              if (expectedDegree > 0 && quotientStr === "") {
+                if (expectedDegree === 1) return variable;
+                return variable + "^" + expectedDegree;
+              }
+
+              return quotientStr;
       }
       function polynomialToCoefficientArray(polyStr) {
-      // Parse the polynomial using our existing function
-      const parsed = parsePolynomial(polyStr);
-
-      // Find the highest degree
-      let maxDegree = 0;
-      for (const key of Object.keys(parsed)) {
-        if (key === "") {
-          maxDegree = Math.max(maxDegree, 0);
-        } else {
-          let degree = 1;
-          if (key.includes('^')) {
-            degree = parseInt(key.split('^')[1]);
-          } else if (key.includes('²')) {
-            degree = 2;
+          const parsed = parsePolynomial(polyStr);
+          
+          // Find the highest degree
+          let maxDegree = 0;
+          for (const key of Object.keys(parsed)) {
+            if (key === "") {
+              maxDegree = Math.max(maxDegree, 0);
+            } else {
+              let degree = 1;
+              if (key.includes('^')) {
+                degree = parseInt(key.split('^')[1]);
+              }
+              maxDegree = Math.max(maxDegree, degree);
+            }
           }
-          maxDegree = Math.max(maxDegree, degree);
-        }
-      }
-
-      // Create coefficient array [low → high]
-      const coefficients = new Array(maxDegree + 1).fill(0);
-
-      for (const [key, value] of Object.entries(parsed)) {
-        if (key === "") {
-          coefficients[0] = value; // constant term
-        } else {
-          let degree = 1;
-          if (key.includes('^')) {
-            degree = parseInt(key.split('^')[1]);
-          } else if (key.includes('²')) {
-            degree = 2;
-          } else {
-            degree = 1;
+          
+          // Create coefficient array [constant, x, x², ...]
+          const coefficients = new Array(maxDegree + 1).fill(0);
+          
+          for (const [key, value] of Object.entries(parsed)) {
+            if (key === "") {
+              coefficients[0] += value; // constant term
+            } else {
+              let degree = 1;
+              if (key.includes('^')) {
+                degree = parseInt(key.split('^')[1]);
+              }
+              coefficients[degree] += value;
+            }
           }
-          coefficients[degree] = value;
-        }
-      }
-
-      return coefficients;
+          
+          return coefficients;
       }
       function formatPolynomialArray(polyArray, variable = 'x') {
-      if (polyArray.length === 0) return "0";
-
-      let result = "";
-
-      for (let i = 0; i < polyArray.length; i++) {
-        const coeff = polyArray[i];
-        if (coeff === 0) continue;
-        
-        const power = polyArray.length - i - 1;
-        let sign = coeff > 0 ? (i === 0 ? "" : " + ") : " - ";
-        let absCoeff = Math.abs(coeff);
-        
-        // Special handling for coefficients of 1 with variables
-        let coeffStr = "";
-        if (absCoeff === 1 && power > 0) {
-          coeffStr = ""; // Don't show "1" before variables
-        } else {
-          coeffStr = absCoeff.toString();
-        }
-        
-        if (power === 0) {
-          result += sign + absCoeff;
-        } else if (power === 1) {
-          result += sign + coeffStr + variable;
-        } else {
-          result += sign + coeffStr + variable + "^" + power;
-        }
-      }
-
-      // Handle the specific case where we have [0, 1] which should be just the variable
-      if (result === "1" && polyArray.length === 2 && polyArray[0] === 0 && polyArray[1] === 1) {
-        return variable;
-      }
-
-      // Handle the specific case where we have [0, -1] which should be just -variable
-      if (result === "-1" && polyArray.length === 2 && polyArray[0] === 0 && polyArray[1] === -1) {
-        return "-" + variable;
-      }
-
-      // Handle cases like [0, 0, 1] (x²) etc.
-      if (result === "1" && polyArray.length > 1) {
-        // Find the highest power with non-zero coefficient
-        let highestPower = -1;
-        for (let i = polyArray.length - 1; i >= 0; i--) {
-          if (polyArray[i] !== 0) {
-            highestPower = polyArray.length - i - 1;
-            break;
-          }
-        }
-        
-        if (highestPower === 1) return variable;
-        if (highestPower > 1) return variable + "^" + highestPower;
-      }
-
-      // Handle negative cases
-      if (result === "-1" && polyArray.length > 1) {
-        let highestPower = -1;
-        for (let i = polyArray.length - 1; i >= 0; i--) {
-          if (polyArray[i] !== 0) {
-            highestPower = polyArray.length - i - 1;
-            break;
-          }
-        }
-        
-        if (highestPower === 1) return "-" + variable;
-        if (highestPower > 1) return "-" + variable + "^" + highestPower;
-      }
-
-      return result || "0";
+  if (polyArray.length === 0) return "0";
+  
+  const terms = [];
+  
+  // polyArray is [constant, x, x², ...]
+  for (let degree = polyArray.length - 1; degree >= 0; degree--) {
+    const coeff = polyArray[degree];
+    if (coeff === 0) continue;
+    
+    let term = "";
+    
+    if (degree === 0) {
+      term = coeff.toString();
+    } else if (degree === 1) {
+      term = coeff === 1 ? variable : coeff === -1 ? `-${variable}` : `${coeff}${variable}`;
+    } else {
+      term = coeff === 1 ? `${variable}^${degree}` : 
+             coeff === -1 ? `-${variable}^${degree}` : 
+             `${coeff}${variable}^${degree}`;
+    }
+    
+    terms.push(term);
+  }
+  
+  let result = terms.join(" + ").replace(/\+\s-/g, " - ");
+  
+  // Handle empty result
+  return result || "0";
       }
       function addPolynomialArrays(p1, p2) {
       let maxLen = Math.max(p1.length, p2.length);
