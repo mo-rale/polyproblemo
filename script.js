@@ -600,15 +600,19 @@
         }
 
           // Convert the final quotient array to a proper polynomial string
-          let finalQuotientStr = formatPolynomialArray(result, variable);
+           let finalQuotientStr = formatPolynomialArray(result, variable);
 
-          // Apply the quotient conversion to handle cases like m²/m² = 1 (but should show variable)
+          // Apply the quotient conversion to handle cases like constant 1 becoming variable
           const dividendDegree = polynomialToCoefficientArray(dividendStr).length - 1;
           const divisorDegree = polynomialToCoefficientArray(divisorStr).length - 1;
           finalQuotientStr = convertQuotientToVariable(finalQuotientStr, variable, dividendDegree, divisorDegree);
 
+          // Format remainder similarly
+          let finalRemainderStr = formatPolynomialArray(remainder, variable);
+
           steps += `<div class="final-result"><h4>Final Quotient: ${finalQuotientStr}</h4>`;
-          steps += `<h4>Final Remainder: ${formatPolynomialArray(remainder, variable)}</h4></div>`;
+          steps += `<h4>Final Remainder: ${finalRemainderStr}</h4></div>`;
+
 
         return steps;
       } catch (error) {
@@ -634,39 +638,52 @@
               return variableMatch1 ? variableMatch1[0] : (variableMatch2 ? variableMatch2[0] : 'x');
       }
       function convertQuotientToVariable(quotientStr, variable, dividendDegree, divisorDegree) {
-              const expectedDegree = dividendDegree - divisorDegree;
+        const expectedDegree = dividendDegree - divisorDegree;
 
-              // Special case: when dividend and divisor are the same degree, result should be 1
-              if (expectedDegree === 0 && quotientStr === "1") {
-                return "1";
-              }
+        // Special case: when dividend and divisor are the same degree, result should be 1 (constant)
+        if (expectedDegree === 0 && quotientStr === "1") {
+          return "1";
+        }
 
-              // If we expect a variable but got a constant "1", convert it
-              if (expectedDegree > 0 && quotientStr === "1") {
-                if (expectedDegree === 1) return variable;
-                return variable + "^" + expectedDegree;
-              }
+        // If we expect a variable but got a constant "1", convert it to variable form
+        if (expectedDegree > 0 && quotientStr === "1") {
+          if (expectedDegree === 1) return variable;
+          return `${variable}^${expectedDegree}`;
+        }
 
-              // If we expect a variable but got a constant "-1", convert it
-              if (expectedDegree > 0 && quotientStr === "-1") {
-                if (expectedDegree === 1) return "-" + variable;
-                return "-" + variable + "^" + expectedDegree;
-              }
+        // If we expect a variable but got a constant "-1", convert it
+        if (expectedDegree > 0 && quotientStr === "-1") {
+          if (expectedDegree === 1) return `-${variable}`;
+          return `-${variable}^${expectedDegree}`;
+        }
 
-              // For other numeric constants where we expect variables
-              if (expectedDegree > 0 && /^-?\d+$/.test(quotientStr)) {
-                const num = parseInt(quotientStr);
-                if (expectedDegree === 1) return quotientStr + variable;
-                return quotientStr + variable + "^" + expectedDegree;
-              }
+        // For other numeric constants where we expect variables, prepend/append the variable
+        if (expectedDegree > 0 && /^-?\d+$/.test(quotientStr)) {
+          const num = parseInt(quotientStr);
+          const absNum = Math.abs(num);
+          let sign = num < 0 ? "-" : "";
+          let coeffPart = (absNum === 1 && expectedDegree === 1) ? "" : absNum.toString();
+          let varPart = variable;
+          if (expectedDegree > 1) {
+            varPart += `^${expectedDegree}`;
+          }
+          return sign + coeffPart + varPart;
+        }
 
-              // Special case: if quotient is empty but we expect variables, return the variable
-              if (expectedDegree > 0 && quotientStr === "") {
-                if (expectedDegree === 1) return variable;
-                return variable + "^" + expectedDegree;
-              }
+        // Special case: if quotient is empty but we expect variables, return the variable
+        if (expectedDegree > 0 && (quotientStr === "" || quotientStr === "0")) {
+          if (expectedDegree === 1) return variable;
+          return `${variable}^${expectedDegree}`;
+        }
 
-              return quotientStr;
+        // Apply superscript conversion if not already applied
+        const superscripts = {
+          "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
+          "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹"
+        };
+        return quotientStr.replace(/\^(\d+)/g, (_, exp) => {
+          return [...exp].map(d => superscripts[d] || d).join("");
+        });
       }
       function polynomialToCoefficientArray(polyStr) {
           const parsed = parsePolynomial(polyStr);
@@ -703,34 +720,50 @@
           return coefficients;
       }
       function formatPolynomialArray(polyArray, variable = 'x') {
-  if (polyArray.length === 0) return "0";
-  
-  const terms = [];
-  
-  // polyArray is [constant, x, x², ...]
-  for (let degree = polyArray.length - 1; degree >= 0; degree--) {
-    const coeff = polyArray[degree];
-    if (coeff === 0) continue;
-    
-    let term = "";
-    
-    if (degree === 0) {
-      term = coeff.toString();
-    } else if (degree === 1) {
-      term = coeff === 1 ? variable : coeff === -1 ? `-${variable}` : `${coeff}${variable}`;
-    } else {
-      term = coeff === 1 ? `${variable}^${degree}` : 
-             coeff === -1 ? `-${variable}^${degree}` : 
-             `${coeff}${variable}^${degree}`;
-    }
-    
-    terms.push(term);
-  }
-  
-  let result = terms.join(" + ").replace(/\+\s-/g, " - ");
-  
-  // Handle empty result
-  return result || "0";
+        if (polyArray.length === 0) return "0";
+        
+        const terms = [];
+        
+        // polyArray is [constant, x, x², ...] low to high
+        for (let degree = polyArray.length - 1; degree >= 0; degree--) {
+          const coeff = polyArray[degree];
+          if (coeff === 0) continue;
+          
+          let term = "";
+          
+          if (degree === 0) {
+            term = coeff.toString();
+          } else {
+            let varPart = variable;
+            if (degree > 1) {
+              varPart += `^${degree}`;
+            }
+            
+            if (Math.abs(coeff) === 1 && degree === 1) {
+              term = (coeff < 0 ? "-" : "") + varPart;
+            } else {
+              term = coeff.toString() + varPart;
+            }
+          }
+          
+          terms.push(term);
+        }
+        
+        let result = terms.join(" + ").replace(/\+\s-/g, " - ");
+        
+        // Handle empty result
+        if (result === "") return "0";
+        
+        // Convert exponents to superscript for display consistency
+        const superscripts = {
+          "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
+          "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹"
+        };
+        result = result.replace(/\^(\d+)/g, (_, exp) => {
+          return [...exp].map(d => superscripts[d] || d).join("");
+        });
+        
+        return result;
       }
       function addPolynomialArrays(p1, p2) {
       let maxLen = Math.max(p1.length, p2.length);
