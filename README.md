@@ -2,7 +2,7 @@
 
 ![Poly Problemo](https://img.shields.io/badge/Polynomial-Learning%20App-blue)
 ![Version](https://img.shields.io/badge/Beta-1.0.1-green)
-![License](https://img.shields.io/badge/License-MIT-yellow)
+
 
 A comprehensive web application designed to help students learn and practice polynomial operations through interactive lessons and quizzes.
 
