@@ -502,7 +502,7 @@ function subtractPolynomials(p1, p2) {
     return result;
 }
 
-//Multiplication
+//Multiplication yeah
 function multiplyPolynomials(p1, p2) {
     const result = {};
     for (const [key1, value1] of Object.entries(p1)) {
