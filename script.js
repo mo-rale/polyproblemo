@@ -90,7 +90,22 @@ function goTo(page) {
 }
 
 function goToMainSite() {
-    window.location.href = '../index.html';
+    const githubPagesURL = 'https://mo-rale.github.io/mathmasterpro/';
+    const localPath = '../index.html';
+    
+    try {
+        if (window.location.hostname === 'localhost' || 
+            window.location.hostname === '127.0.0.1' ||
+            window.location.protocol === 'file:') {
+            window.location.href = localPath;
+        } else {
+            window.location.href = githubPagesURL;
+        }
+    } catch (error) {
+        console.error('Navigation error:', error);
+        // Fallback to local path
+        window.location.href = localPath;
+    }
 }
 
 //UI & Display Functions
@@ -487,7 +502,7 @@ function subtractPolynomials(p1, p2) {
     return result;
 }
 
-//Multiplication
+//Multiplication yeah
 function multiplyPolynomials(p1, p2) {
     const result = {};
     for (const [key1, value1] of Object.entries(p1)) {
