@@ -90,7 +90,7 @@ function goTo(page) {
 }
 
 function goToMainSite() {
-    const githubPagesURL = 'https://mo-rale.github.io/mathmasterpro/';
+    const githubPagesURL = 'https://mo-rale.github.io/Calcula_app_portal/';
     const localPath = '../index.html';
     
     try {
